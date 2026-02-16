@@ -10,8 +10,9 @@ import Control.Lens hiding ((.=))
 import Control.Monad
 import qualified Data.Aeson as A
 import Data.Aeson.Types
+import qualified Data.Aeson.Key as AK
+import qualified Data.Aeson.KeyMap as AKM
 import Data.Char as Char
-import qualified Data.HashMap.Strict as HM
 import qualified Data.List.Split as L
 import qualified Data.Map as M
 import Data.Maybe
@@ -25,6 +26,7 @@ import Pact.Types.ChainMeta
 import Pact.Types.Command
 import Pact.Types.Hash
 import Pact.Parse
+import qualified Pact.JSON.Encode as J
 -- TODO: Rip out sig data dependency
 import Pact.Types.SigData (PublicKeyHex(..))
 
@@ -37,14 +39,24 @@ data CSDSigner = CSDSigner
 instance ToJSON CSDSigner where
   toJSON (CSDSigner (PublicKeyHex pkh) mSig) = object $
     [ "pubKey" .= pkh
-    , "sig" .= (_usSig <$> mSig)
+    , "sig" .= (extractSigText <$> mSig)
     ]
+    where
+      extractSigText sig =
+        case J.toJsonViaEncode sig of
+          A.Object o -> case AKM.lookup (AK.fromText "sig") o of
+            Just (A.String t) -> t
+            _ -> T.empty
+          _ -> T.empty
 
 instance FromJSON CSDSigner where
   parseJSON = withObject "Signer" $ \o -> do
     pk <- o .: "pubKey"
-    mSig ::(Maybe Text) <- o.:? "sig"
-    pure $ CSDSigner pk $ UserSig <$> mSig
+    mSigText ::(Maybe Text) <- o .:? "sig"
+    mSig <- traverse parseUserSig mSigText
+    pure $ CSDSigner pk mSig
+    where
+      parseUserSig t = parseJSON $ object ["sig" .= t]
 
 --------------------------------------------------------------------------------
 newtype SignatureList =
@@ -85,7 +97,7 @@ data SigningOutcome =
 
 instance ToJSON SigningOutcome where
   toJSON a = case a of
-    SO_Success h -> object ["result" .= ("success" :: Text), "hash" .= h ]
+    SO_Success h -> object ["result" .= ("success" :: Text), "hash" .= J.toJsonViaEncode h ]
     SO_Failure msg -> object ["result" .= ("failure" :: Text), "msg" .= msg ]
     SO_NoSig -> object ["result" .= ("noSig" :: Text)]
 

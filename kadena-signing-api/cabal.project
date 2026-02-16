@@ -1,0 +1,53 @@
+packages:
+  .
+
+with-compiler: ghc-9.12.2
+
+package pact
+  ghc-options: -Wwarn
+  flags: +cryptonite-ed25519 -build-tool +no-advice
+
+source-repository-package
+  type: git
+  location: https://github.com/vootaa/cardano-crypto.git
+  tag: 4590efa638397e952a51a8994b5543e4ea3c1ecd
+
+source-repository-package
+  type: git
+  location: https://github.com/vootaa/pact.git
+  tag: 4208012e3f2fdf1721c24cdcb97de5f64fd5f58a
+
+source-repository-package
+  type: git
+  location: https://github.com/vootaa/pact-json.git
+  tag: 1d260bfaa48312b54851057885de4c43c420e35f
+
+source-repository-package
+  type: git
+  location: https://github.com/vootaa/kadena-ethereum-bridge.git
+  tag: 96bff6b35b2a2b6bf63f9d19b536f0c61102be36
+
+allow-newer: *:base
+allow-newer: *:aeson
+allow-newer: *:hashable
+allow-newer: *:unordered-containers
+allow-newer: *:template-haskell
+allow-newer: *:bifunctors
+
+constraints: prettyprinter <2
+constraints: tls <2
+constraints: lens >=5.3
+
+package cryptonite-openssl
+  extra-lib-dirs: /opt/homebrew/opt/openssl@3/lib
+  extra-include-dirs: /opt/homebrew/opt/openssl@3/include
+
+package hashes
+  flags: +with-openssl +openssl-use-pkg-config
+  extra-lib-dirs: /opt/homebrew/opt/openssl@3/lib
+  extra-include-dirs: /opt/homebrew/opt/openssl@3/include
+
+package ethereum
+  flags: +openssl-use-pkg-config
+  extra-lib-dirs: /opt/homebrew/opt/openssl@3/lib
+  extra-include-dirs: /opt/homebrew/opt/openssl@3/include

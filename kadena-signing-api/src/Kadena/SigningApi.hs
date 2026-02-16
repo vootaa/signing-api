@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -11,14 +12,34 @@ import Data.Aeson
 import Data.Proxy
 import Data.Text (Text)
 import GHC.Generics
+import qualified Pact.JSON.Encode as J
 import Pact.Server.API
 import Pact.Types.Capability (SigCapability(..))
 import Pact.Types.ChainMeta (TTLSeconds(..))
-import Pact.Types.Runtime (GasLimit(..), ChainId, PublicKey)
+import Pact.Types.Runtime (GasLimit(..), ChainId)
 import Pact.Types.Command (Command)
+import Pact.Types.SigData (PublicKeyHex)
 import Servant.API
 
 import Kadena.SigningTypes
+
+instance ToJSON SigCapability where
+  toJSON = J.toJsonViaEncode
+
+instance ToJSON PublicKeyHex where
+  toJSON = J.toJsonViaEncode
+
+instance ToJSON (Command Text) where
+  toJSON = J.toJsonViaEncode
+
+instance ToJSON TTLSeconds where
+  toJSON = J.toJsonViaEncode
+
+instance ToJSON ChainId where
+  toJSON = J.toJsonViaEncode
+
+instance ToJSON GasLimit where
+  toJSON = J.toJsonViaEncode
 
 -- | Values of this type are supplied by the dapp author to the wallet so the
 -- wallet knows what capabilities need to be granted for the transaction.
@@ -47,7 +68,7 @@ data SigningRequest = SigningRequest
   , _signingRequest_gasLimit :: Maybe GasLimit
   , _signingRequest_ttl :: Maybe TTLSeconds
   , _signingRequest_sender :: Maybe AccountName
-  , _signingRequest_extraSigners :: Maybe [PublicKey]
+  , _signingRequest_extraSigners :: Maybe [PublicKeyHex]
   } deriving (Show, Generic)
 
 instance ToJSON SigningRequest where
