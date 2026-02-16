@@ -12,10 +12,12 @@ import Data.Proxy
 import Data.Text (Text)
 import GHC.Generics
 import Pact.Server.API
+import qualified Pact.JSON.Encode as J
 import Pact.Types.Capability (SigCapability(..))
 import Pact.Types.ChainMeta (TTLSeconds(..))
-import Pact.Types.Runtime (GasLimit(..), ChainId, PublicKey)
+import Pact.Types.Runtime (GasLimit(..), ChainId)
 import Pact.Types.Command (Command)
+import Pact.Types.SigData (PublicKeyHex)
 import Servant.API
 
 import Kadena.SigningTypes
@@ -32,8 +34,12 @@ data DappCap = DappCap
   } deriving (Eq,Ord,Show,Generic)
 
 instance ToJSON DappCap where
-  toJSON = genericToJSON compactEncoding
-  toEncoding = genericToEncoding compactEncoding
+  toJSON (DappCap r d c) = object
+    [ "role" .= r
+    , "description" .= d
+    , "cap" .= J.toJsonViaEncode c
+    ]
+  toEncoding = toEncoding . toJSON
 
 instance FromJSON DappCap where
   parseJSON = genericParseJSON compactEncoding
@@ -47,12 +53,22 @@ data SigningRequest = SigningRequest
   , _signingRequest_gasLimit :: Maybe GasLimit
   , _signingRequest_ttl :: Maybe TTLSeconds
   , _signingRequest_sender :: Maybe AccountName
-  , _signingRequest_extraSigners :: Maybe [PublicKey]
+  , _signingRequest_extraSigners :: Maybe [PublicKeyHex]
   } deriving (Show, Generic)
 
 instance ToJSON SigningRequest where
-  toJSON = genericToJSON compactEncoding
-  toEncoding = genericToEncoding compactEncoding
+  toJSON sr = object
+    [ "code" .= _signingRequest_code sr
+    , "data" .= _signingRequest_data sr
+    , "caps" .= _signingRequest_caps sr
+    , "nonce" .= _signingRequest_nonce sr
+    , "chainId" .= fmap J.toJsonViaEncode (_signingRequest_chainId sr)
+    , "gasLimit" .= fmap J.toJsonViaEncode (_signingRequest_gasLimit sr)
+    , "ttl" .= fmap J.toJsonViaEncode (_signingRequest_ttl sr)
+    , "sender" .= _signingRequest_sender sr
+    , "extraSigners" .= fmap (map J.toJsonViaEncode) (_signingRequest_extraSigners sr)
+    ]
+  toEncoding = toEncoding . toJSON
 
 instance FromJSON SigningRequest where
   parseJSON = genericParseJSON compactEncoding
@@ -63,8 +79,11 @@ data SigningResponse = SigningResponse
   } deriving (Eq, Show, Generic)
 
 instance ToJSON SigningResponse where
-  toJSON = genericToJSON compactEncoding
-  toEncoding = genericToEncoding compactEncoding
+  toJSON (SigningResponse b c) = object
+    [ "body" .= J.toJsonViaEncode b
+    , "chainId" .= J.toJsonViaEncode c
+    ]
+  toEncoding = toEncoding . toJSON
 
 instance FromJSON SigningResponse where
   parseJSON = genericParseJSON compactEncoding

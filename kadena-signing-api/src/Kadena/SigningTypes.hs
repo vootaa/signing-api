@@ -37,14 +37,17 @@ data CSDSigner = CSDSigner
 instance ToJSON CSDSigner where
   toJSON (CSDSigner (PublicKeyHex pkh) mSig) = object $
     [ "pubKey" .= pkh
-    , "sig" .= (_usSig <$> mSig)
+    , "sig" .= fmap sigToText mSig
     ]
+    where
+      sigToText (ED25519Sig s) = s
+      sigToText _ = ""
 
 instance FromJSON CSDSigner where
   parseJSON = withObject "Signer" $ \o -> do
     pk <- o .: "pubKey"
-    mSig ::(Maybe Text) <- o.:? "sig"
-    pure $ CSDSigner pk $ UserSig <$> mSig
+    mSig <- o .:? "sig"
+    pure $ CSDSigner pk $ ED25519Sig <$> mSig
 
 --------------------------------------------------------------------------------
 newtype SignatureList =
@@ -85,7 +88,7 @@ data SigningOutcome =
 
 instance ToJSON SigningOutcome where
   toJSON a = case a of
-    SO_Success h -> object ["result" .= ("success" :: Text), "hash" .= h ]
+    SO_Success h -> object ["result" .= ("success" :: Text), "hash" .= hashToText (toUntypedHash h) ]
     SO_Failure msg -> object ["result" .= ("failure" :: Text), "msg" .= msg ]
     SO_NoSig -> object ["result" .= ("noSig" :: Text)]
 
@@ -197,5 +200,6 @@ compactEncoding = defaultOptions
     , A.tagSingleConstructors = False
     }
   where
-    -- As long as names are not empty or just underscores this head should be fine:
-    shortener = head . reverse . filter (/= "") . L.splitOn "_"
+    shortener s = case reverse (filter (/= "") (L.splitOn "_" s)) of
+      x : _ -> x
+      [] -> ""
