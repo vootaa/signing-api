@@ -1,0 +1,16 @@
+cradle:
+  multi:
+    - path: "kadena-signing-api"
+      config:
+        cradle:
+          cabal: {}
+
+    - path: "kadena-signing-api-mock"
+      config:
+        cradle:
+          cabal: {}
+
+    - path: "."
+      config:
+        cradle:
+          none:

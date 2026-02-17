@@ -27,4 +27,3 @@ package-lock.json
 # Schemathesis
 .hypothesis
 __pycache__
-hie.yaml
