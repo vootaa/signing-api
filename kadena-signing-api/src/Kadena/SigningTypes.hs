@@ -210,4 +210,7 @@ compactEncoding = defaultOptions
     }
   where
     -- As long as names are not empty or just underscores this head should be fine:
-    shortener = head . reverse . filter (/= "") . L.splitOn "_"
+    shortener n =
+      case reverse (filter (/= "") (L.splitOn "_" n)) of
+        (x:_) -> x
+        [] -> n
